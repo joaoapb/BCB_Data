@@ -89,7 +89,7 @@ shinyServer(function(input, output, session) {
     },
     content = function(con) {
       db <- getdata()[3]
-      write.csv2(db, con, row.names = FALSE)
+      write.csv2(db, con, row.names = FALSE, fileEncoding = 'utf-8')
     }
   )
 

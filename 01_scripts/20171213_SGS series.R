@@ -23,6 +23,8 @@ bacenData <- read.csv("00_dados/lista_de_series_SGS.csv",
                        header = TRUE, sep = ";")
 
 bacenData$nome = tolower(iconv(bacenData$Nome.completo, "WINDOWS-1252","UTF-8"))
+bacenData$Nome.completo = tolower(iconv(bacenData$Nome.completo, "WINDOWS-1252",
+                                        "UTF-8"))
 
 # FUNÇÕES ----
 CountCharOccurrences <- function(char, s) {
@@ -31,74 +33,81 @@ CountCharOccurrences <- function(char, s) {
 }
 
 SearchSeries <- function(txt='', desativada=NULL) {
-  # texto a ser buscado em letras minúsculas
-  txt = tm::removeWords(tolower(txt), tm::stopwords('pt'))
+  if (txt == '') {
+    tmp = bacenData
+  } else {
+    # texto a ser buscado em letras minúsculas
+    txt = tm::removeWords(tolower(txt), tm::stopwords('pt'))
 
-  # divide o texto nos espaços
-  txt.spc = strsplit(txt, ' ', fixed = T)
+    # divide o texto nos espaços
+    txt.spc = strsplit(txt, ' ', fixed = T)
 
-  txt.search = data.frame(
-    'termo'          = NA,
-    'relevancia'     = NA,
-    stringsAsFactors = FALSE
-  )
+    txt.search = data.frame(
+      'termo'          = NA,
+      'relevancia'     = NA,
+      stringsAsFactors = FALSE
+    )
 
-  # gera a lista de termos a serem buscados
-  if (length(txt.spc) > 2) {
-    for (i in 1:length(txt.spc)) {
-      tmp <- combinat::combn(x = txt.spc[i], m = i,
-                             simplify = FALSE)
-      for (t in tmp) {
-        txt.search <-
-          txt.search %>%
-          bind_rows(
-            data.frame(
-              'termo' = paste(unlist(t), collapse = ' '),
-              'relevancia' = i,
-              stringsAsFactors = FALSE))
-      }
-    }
-    } else {
-        txt.spc = c(txt.spc, paste(txt.spc, collapse = ' '))
-        for (t in txt.spc) {
+    # gera a lista de termos a serem buscados
+    if (length(txt.spc) > 2) {
+      for (i in 1:length(txt.spc)) {
+        tmp <- combinat::combn(x = txt.spc[i], m = i,
+                               simplify = FALSE)
+        for (t in tmp) {
           txt.search <-
             txt.search %>%
             bind_rows(
               data.frame(
-                'termo' = t,
-                'relevancia' = CountCharOccurrences(' ', t) + 1,
+                'termo' = paste(unlist(t), collapse = ' '),
+                'relevancia' = i,
                 stringsAsFactors = FALSE))
-          }
+        }
       }
-  # remove a primeira linha
-  txt.search = txt.search[-1,]
+    } else {
+      txt.spc = c(txt.spc, paste(txt.spc, collapse = ' '))
+      for (t in txt.spc) {
+        txt.search <-
+          txt.search %>%
+          bind_rows(
+            data.frame(
+              'termo' = t,
+              'relevancia' = CountCharOccurrences(' ', t) + 1,
+              stringsAsFactors = FALSE))
+      }
+    }
+    # remove a primeira linha
+    txt.search = txt.search[-1,]
 
-  # ordena pela relevancia
-  txt.search = txt.search %>% arrange(desc(relevancia))
+    # ordena pela relevancia
+    txt.search = txt.search %>% arrange(desc(relevancia))
 
-  # busca os termos na base
-  tmp = bacenData %>% mutate(relevancia = 0)
+    # busca os termos na base
+    tmp = bacenData %>% mutate(relevancia = 0)
 
-  for (i in 1:nrow(txt.search)) {
-    rel = txt.search$relevancia[i]
-    termo = txt.search$termo[i]
+    for (i in 1:nrow(txt.search)) {
+      rel = txt.search$relevancia[i]
+      termo = txt.search$termo[i]
 
-    tmp =
-      tmp %>%
-      mutate(relevancia = ifelse(stringr::str_detect(nome, termo),
-                                 relevancia + rel,
-                                 relevancia))
+      tmp =
+        tmp %>%
+        mutate(relevancia = ifelse(stringr::str_detect(nome, termo),
+                                   relevancia + rel,
+                                   relevancia))
+    }
+
+    tmp <- tmp %>%
+      filter(relevancia > 0,
+             Desativada %in% ifelse(
+               desativada == FALSE, c('N'),
+               ifelse(
+                 is.null(desativada), c('N', 'S'), 'S'))) %>%
+      select(Codigo, Nome.completo, Unidade, Periodicidade,
+             Inicio_dd.MM.aaaa, Desativada, relevancia) %>%
+      arrange(desc(relevancia))
   }
 
-  return(tmp %>%
-           filter(relevancia > 0,
-                  Desativada %in% ifelse(
-                    desativada == FALSE, c('N'),
-                    ifelse(
-                      is.null(desativada), c('N', 'S'), 'S'))) %>%
-           select(Codigo, Nome.completo, Unidade, Periodicidade,
-                  Inicio_dd.MM.aaaa, Desativada, relevancia) %>%
-           arrange(desc(relevancia)))
+
+  return(tmp)
 }
 
 # Função que recebe o código da série e retorna a série em um dataframe
