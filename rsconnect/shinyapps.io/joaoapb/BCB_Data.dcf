@@ -1,0 +1,12 @@
+name: BCB_Data
+title: BCB_Data
+username:
+account: joaoapb
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 249147
+bundleId: 1136830
+url: https://joaoapb.shinyapps.io/BCB_Data/
+when: 1513346881.73033
+asMultiple: FALSE
+asStatic: FALSE
