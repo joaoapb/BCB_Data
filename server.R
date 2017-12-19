@@ -30,7 +30,7 @@ shinyServer(function(input, output, session) {
     db <- GetSeriesData(serie, datainicial = input$cal.inicio,
                         datafinal = input$cal.fim)
 
-    return(list(serie, nome, db))
+    return(list(serie = serie, nome = nome, db = db))
   })
   observeEvent(input$bt.busca, {
     db <- SearchSeries(input$busca, desativada = FALSE)
@@ -64,15 +64,15 @@ shinyServer(function(input, output, session) {
 
   observeEvent(input$bt.geragraf, {
 
-    db <- getdata()
+    data <- getdata()
 
     # metodologia <- GetMethodology(serie)
 
     output$txt.titulo <- renderText({
-      paste0(db[[1]], ' - ', db[[2]])
+      paste0(data$serie, ' - ', data$nome)
     })
     output$grafico_serie <- renderPlot({
-      ggplot(db[[3]]) +
+      ggplot(data$db) +
         geom_line(
           aes(x = data,
               y = valor,
@@ -88,8 +88,16 @@ shinyServer(function(input, output, session) {
       paste0('bcb_', input$cal.inicio, '_', input$cal.fim, '.csv')
     },
     content = function(con) {
-      db <- getdata()[3]
-      write.csv2(db, con, row.names = FALSE, fileEncoding = 'utf-8')
+      data <- getdata()
+
+      write.table(
+        x = data$db,
+        file = con,
+        append = FALSE,
+        row.names = FALSE,
+        sep = ";",
+        dec = ",",
+        col.names = TRUE)
     }
   )
 

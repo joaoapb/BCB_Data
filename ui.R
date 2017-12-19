@@ -48,7 +48,6 @@ body <- dashboardBody(
               br(),
               plotOutput('grafico_serie'),
               br()
-              # textOutput('metodologia')
             )
     )
   )

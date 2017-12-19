@@ -20,11 +20,10 @@ library(lubridate)
 # TODO (@João Augusto): criar método para atualização da lista de séries
 # Carrega a lista de séries disponíveis
 bacenData <- read.csv("00_dados/lista_de_series_SGS.csv",
-                       header = TRUE, sep = ";")
+                       header = TRUE, sep = ";", fileEncoding = "UTF-8",
+                      stringsAsFactors = FALSE)
 
-bacenData$nome = tolower(iconv(bacenData$Nome.completo, "WINDOWS-1252","UTF-8"))
-bacenData$Nome.completo = tolower(iconv(bacenData$Nome.completo, "WINDOWS-1252",
-                                        "UTF-8"))
+bacenData$nome = tolower(bacenData$Nome.completo)
 
 # FUNÇÕES ----
 CountCharOccurrences <- function(char, s) {
